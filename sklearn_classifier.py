@@ -115,3 +115,20 @@ plt.ylabel("petal width [standardized]")
 plt.legend(loc="upper left")
 plt.tight_layout()
 plt.show()
+
+# 사이킷런 로지스틱 회귀 비용 함수의 규제 매개변수에 따른 가중치 크기 변화(log)
+
+weights, params = [], []
+for c in np.arange(-5, 5):
+    lr = LogisticRegression(C=10.0 ** c, random_state=1, multi_class="ovr")
+    lr.fit(X_train_std, y_train)
+    weights.append(lr.coef_[1])
+    params.append(10.0 ** c)
+weights = np.array(weights)
+plt.plot(params, weights[:, 0], label="petal length")
+plt.plot(params, weights[:, 1], linestyle="--", label="petal width")
+plt.xlabel("C")
+plt.ylabel("weight coefficient")
+plt.legend(loc="upper left")
+plt.xscale("log")
+plt.show()

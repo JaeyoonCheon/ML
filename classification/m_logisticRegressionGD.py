@@ -1,7 +1,5 @@
 import numpy as np
 
-from sklearn_classifier import X_train
-
 
 class LogisticRegressionGD(object):
     """

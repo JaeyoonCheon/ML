@@ -1,6 +1,5 @@
 from sklearn import datasets
 import numpy as np
-import classifier
 
 iris = datasets.load_iris()
 X = iris.data[:, [2, 3]]
@@ -94,7 +93,9 @@ plt.show()
 X_train_01_subset = X_train[(y_train == 0) | (y_train == 1)]
 y_train_01_subset = y_train[(y_train == 0) | (y_train == 1)]
 
-lrgd = classifier.LogisticRegressionGD(eta=0.05, n_iter=1000, random_state=1)
+import classification
+
+lrgd = classification.LogisticRegressionGD(eta=0.05, n_iter=1000, random_state=1)
 lrgd.fit(X_train_01_subset, y_train_01_subset)
 
 plot_decision_regions(X=X_train_01_subset, y=y_train_01_subset, classifier=lrgd)
@@ -131,4 +132,55 @@ plt.xlabel("C")
 plt.ylabel("weight coefficient")
 plt.legend(loc="upper left")
 plt.xscale("log")
+plt.show()
+
+# Linear SVM model
+
+from sklearn.svm import SVC
+
+svm = SVC(kernel="linear", C=1.0, random_state=1)
+svm.fit(X_train_std, y_train)
+
+plot_decision_regions(X_combined_std, y_combined_std, classifier=svm, test_idx=range(105, 150))
+plt.xlabel("pepal length [standardized]")
+plt.ylabel("petal width [standardized]")
+plt.legend(loc="upper left")
+plt.tight_layout()
+plt.show()
+
+"""
+비선형 데이터에 대한 커널 SVM
+
+예를 들어, 2차원 데이터 셋을 3차원 이상의 고차원 공간으로 옮겨 클래스를 구분한 후
+다시 원본 특성 공간으로 회귀하면 비선형 결정 경계를 구할 수 있다.
+"""
+np.random.seed(1)
+X_xor = np.random.randn(200, 2)
+y_xor = np.logical_xor(X_xor[:, 0] > 0, X_xor[:, 1] > 0)
+y_xor = np.where(y_xor, 1, -1)
+
+plt.scatter(X_xor[y_xor == 1, 0], X_xor[y_xor == 1, 1], c="b", marker="x", label="1")
+plt.scatter(X_xor[y_xor == -1, 0], X_xor[y_xor == -1, 1], c="r", marker="s", label="-1")
+plt.xlim([-3, 3])
+plt.ylim([-3, 3])
+plt.legend(loc="best")
+plt.tight_layout()
+plt.show()
+
+svm = SVC(kernel="rbf", random_state=1, gamma=0.10, C=10.0)
+svm.fit(X_xor, y_xor)
+plot_decision_regions(X_xor, y_xor, classifier=svm)
+plt.legend(loc="upper left")
+plt.tight_layout()
+plt.show()
+
+# 붓꽃 데이터셋에 대한 RBF 커널 SVM 적용(Gamma = 0.2)
+
+svm = SVC(kernel="rbf", random_state=1, gamma=0.2, C=1.0)
+svm.fit(X_train_std, y_train)
+plot_decision_regions(X_combined_std, y_combined_std, classifier=svm, test_idx=range(105, 150))
+plt.xlabel("pepal length [standardized]")
+plt.ylabel("petal width [standardized]")
+plt.legend(loc="upper left")
+plt.tight_layout()
 plt.show()

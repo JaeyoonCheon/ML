@@ -4,7 +4,12 @@
 
 from typing import Tuple
 from numpy.core.fromnumeric import std
+from numpy.core.numeric import indices
 import pandas as pd
+from scipy.sparse.construct import random
+from sklearn import neighbors
+
+import dataProcessing
 
 df = pd.DataFrame(
     [["green", "M", 10.1, "class1"], ["red", "L", 13.5, "class2"], ["blue", "XL", 15.3, "class1"]]
@@ -177,4 +182,80 @@ plt.xlabel("C")
 plt.xscale("log")
 plt.legend(loc="upper left")
 ax.legend(loc="upper center", bbox_to_anchor=(1.38, 1.03), ncol=1, fancybox=True)
+plt.show()
 
+
+"""
+순차 특성 선택 알고리즘 - SBS(Sequential Backward Selection)
+    초기 d차원을 k<d인 k차원의 특성 부분 공간으로 축소
+    
+    1. k=d로 초기화
+    2. 조건 x^- = argmax(X_k - x)를 최대화하는 특성 x^- 결정
+    3. 특성 집합에서 x^- 제거. (X_k-1 := X_k - x^- // k := k - 1
+    4. k가 목표 하는 특성 개수가 되면 종료
+"""
+import matplotlib.pyplot as plt
+from sklearn.neighbors import KNeighborsClassifier
+import dataProcessing
+
+knn = KNeighborsClassifier(n_neighbors=5)
+
+sbs = dataProcessing.SBS(knn, k_features=1)
+sbs.fit(X_train_std, y_train)
+
+k_feat = [len(k) for k in sbs.subsets_]
+
+plt.plot(k_feat, sbs.scores_, marker="o")
+plt.ylim([0.7, 1.02])
+plt.ylabel("Accuracy")
+plt.xlabel("Number of features")
+plt.grid()
+plt.tight_layout()
+plt.show()
+
+# SBS k = 3의 경우
+k3 = list(sbs.subsets_[10])
+print(df_wine.columns[1:][k3])
+
+# 테스트 데이터셋에서의 KNN 분류기 성능
+knn.fit(X_train_std, y_train)
+print("훈련 정확도:", knn.score(X_train_std, y_train))
+print("테스트 정확도", knn.score(X_test_std, y_test))
+
+# k = 3, 선택된 3개의 특성에 대해서의 KNN 분류기 성능
+knn.fit(X_train_std[:, k3], y_train)
+print("훈련 정확도:", knn.score(X_train_std[:, k3], y_train))
+print("테스트 정확도", knn.score(X_test_std[:, k3], y_test))
+
+"""
+랜덤 포레스트의 결정 트리에서 계산한 평균적인 불순도 감소로 특성 중요도 평가 가능
+"""
+from sklearn.ensemble import RandomForestClassifier
+
+feat_labels = df_wine.columns[1:]
+
+forest = RandomForestClassifier(n_estimators=500, random_state=1)
+forest.fit(X_train, y_train)
+importances = forest.feature_importances_
+
+indices = np.argsort(importances)[::-1]
+
+for f in range(X_train.shape[1]):
+    print("%2d) %-*s %f" % (f + 1, 30, feat_labels[indices[f]], importances[indices[f]]))
+
+plt.title("Feature Importance")
+plt.bar(range(X_train.shape[1]), importances[indices], align="center")
+plt.xticks(range(X_train.shape[1]), feat_labels[indices], rotation=90)
+plt.xlim([-1, X_train.shape[1]])
+plt.tight_layout()
+plt.show()
+
+# 지정된 임계값에 따라 선택된 가장 중요한 특성 선택
+from sklearn.feature_selection import SelectFromModel
+
+sfm = SelectFromModel(forest, threshold=0.1, prefit=True)
+X_selected = sfm.transform(X_train)
+print("이 임계조건을 만족하는 샘플의 수:", X_selected.shape[1])
+
+for i in range(X_selected.shape[1]):
+    print("%2d) %-*s %f" % (i + 1, 30, feat_labels[indices[i]], importances[indices[i]]))
